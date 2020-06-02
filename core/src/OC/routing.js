@@ -19,10 +19,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import _ from 'underscore'
-
-import OC from './index'
-import { coreApps } from './constants'
+import router from '@nextcloud/router'
 
 /**
  * Get an absolute url to a file in an app
@@ -30,21 +27,27 @@ import { coreApps } from './constants'
  * @param {string} file the file path relative to the app folder
  * @returns {string} Absolute URL to a file
  */
-export const linkTo = (app, file) => filePath(app, '', file)
+export const linkTo = (app, file) => {
+	return router.linkTo(app, file)
+}
 
 /**
  * Creates a relative url for remote use
  * @param {string} service id
  * @returns {string} the url
  */
-export const linkToRemoteBase = service => getRootPath() + '/remote.php/' + service
+export const linkToRemoteBase = service => {
+	return router.getRootUrl() + '/remote.php/' + service
+}
 
 /**
  * @brief Creates an absolute url for remote use
  * @param {string} service id
  * @returns {string} the url
  */
-export const linkToRemote = service => window.location.protocol + '//' + window.location.host + linkToRemoteBase(service)
+export const linkToRemote = service => {
+	return router.generateRemoteUrl(service)
+}
 
 /**
  * Gets the base path for the given OCS API service.
@@ -53,8 +56,7 @@ export const linkToRemote = service => window.location.protocol + '//' + window.
  * @returns {string} OCS API base path
  */
 export const linkToOCS = (service, version) => {
-	version = (version !== 2) ? 1 : 2
-	return window.location.protocol + '//' + window.location.host + getRootPath() + '/ocs/v' + version + '.php/' + service + '/'
+	return router.generateOcsUrl(service, version)
 }
 
 /**
@@ -67,35 +69,7 @@ export const linkToOCS = (service, version) => {
  * @returns {string} Absolute URL for the given relative URL
  */
 export const generateUrl = (url, params, options) => {
-	const defaultOptions = {
-		escape: true,
-	}
-	const allOptions = options || {}
-	_.defaults(allOptions, defaultOptions)
-
-	const _build = function(text, vars) {
-		vars = vars || []
-		return text.replace(/{([^{}]*)}/g,
-			function(a, b) {
-				const r = (vars[b])
-				if (allOptions.escape) {
-					return (typeof r === 'string' || typeof r === 'number') ? encodeURIComponent(r) : encodeURIComponent(a)
-				} else {
-					return (typeof r === 'string' || typeof r === 'number') ? r : a
-				}
-			}
-		)
-	}
-	if (url.charAt(0) !== '/') {
-		url = '/' + url
-
-	}
-
-	if (OC.config.modRewriteWorking === true) {
-		return getRootPath() + _build(url, params)
-	}
-
-	return getRootPath() + '/index.php' + _build(url, params)
+	return router.generateUrl(url, params, options)
 }
 
 /**
@@ -109,12 +83,7 @@ export const generateUrl = (url, params, options) => {
  * @deprecated 19.0.0 use `imagePath` from https://www.npmjs.com/package/@nextcloud/router
  */
 export const imagePath = (app, file) => {
-	if (file.indexOf('.') === -1) {
-		// if no extension is given, use svg
-		return filePath(app, 'img', file + '.svg')
-	}
-
-	return filePath(app, 'img', file)
+	return router.imagePath(app, file)
 }
 
 /**
@@ -126,45 +95,7 @@ export const imagePath = (app, file) => {
  * @deprecated 19.0.0 use `generateFilePath` from https://www.npmjs.com/package/@nextcloud/router
  */
 export const filePath = (app, type, file) => {
-	const isCore = coreApps.indexOf(app) !== -1
-	let link = getRootPath()
-	if (file.substring(file.length - 3) === 'php' && !isCore) {
-		link += '/index.php/apps/' + app
-		if (file !== 'index.php') {
-			link += '/'
-			if (type) {
-				link += encodeURI(type + '/')
-			}
-			link += file
-		}
-	} else if (file.substring(file.length - 3) !== 'php' && !isCore) {
-		link = OC.appswebroots[app]
-		if (type) {
-			link += '/' + type + '/'
-		}
-		if (link.substring(link.length - 1) !== '/') {
-			link += '/'
-		}
-		link += file
-	} else {
-		if ((app === 'core' || app === 'search') && type === 'ajax') {
-			link += '/index.php/'
-		} else {
-			link += '/'
-		}
-		if (!isCore) {
-			link += 'apps/'
-		}
-		if (app !== '') {
-			app += '/'
-			link += app
-		}
-		if (type) {
-			link += type + '/'
-		}
-		link += file
-	}
-	return link
+	return router.generateFilePath(app, type, file)
 }
 
 /**
@@ -177,4 +108,6 @@ export const filePath = (app, type, file) => {
  * @deprecated 19.0.0 use `getRootUrl` from https://www.npmjs.com/package/@nextcloud/router
  * @since 8.2
  */
-export const getRootPath = () => OC.webroot
+export const getRootPath = () => {
+	return router.getRootUrl()
+}
